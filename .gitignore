@@ -1,0 +1,70 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# Mac / Linux system files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Data files
+*.csv
+*.tsv
+*.rds
+*.npy
+*.npz
+*.xlsx
+*.feather
+*.parquet
+data/
+outputs/
+results/
+checkpoints/
+
+# Model artifacts
+*.pkl
+*.joblib
+*.sav
+models/
+
+# Compiled C/C++ libraries
+*.so
+
+# Unit test cache
+.cache/
+.pytest_cache/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.aux
+
+# Notebooks (optional)
+*.ipynb
+
+# Ignore R outputs if mixing R + Python
+.Rhistory
+.RData
+.Rproj.user/
+
+# Secrets / credentials
+.env
+.env.*
+secrets.*

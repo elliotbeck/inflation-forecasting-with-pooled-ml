@@ -1,0 +1,7 @@
+fredapi==0.5.2
+numpy<2
+pandas==2.2.3
+pmdarima==2.0.4
+python-dotenv==1.1.0
+scikit_learn==1.6.1
+tqdm==4.67.1
