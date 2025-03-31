@@ -41,7 +41,6 @@ checkpoints/
 *.pkl
 *.joblib
 *.sav
-models/
 
 # Compiled C/C++ libraries
 *.so
