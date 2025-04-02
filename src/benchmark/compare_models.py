@@ -64,31 +64,29 @@ def compare_models(data: pd.DataFrame, data_tabular: pd.DataFrame) -> pd.DataFra
     for col in data.columns:
         mom = mom_data[col]
 
-        # print(f"Running RW, ARIMA, RF for {col}...", flush=True)
-        # forecast_auto_arima = rolling_auto_arima_forecast(mom)
-        # forecast_rw = rolling_rw_forecast(mom, forecast_auto_arima.dropna().index)
-        # forecast_rf = rolling_rf_forecast(data_tabular, country=col)
-        # forecast_rf_pooled = pooled_forecasts_rf[col]
+        print(f"Running RW, ARIMA, RF for {col}...", flush=True)
+        forecast_auto_arima = rolling_auto_arima_forecast(mom)
+        forecast_rw = rolling_rw_forecast(mom, forecast_auto_arima.dropna().index)
+        forecast_rf = rolling_rf_forecast(data_tabular, country=col)
+        forecast_rf_pooled = pooled_forecasts_rf[col]
         forecast_lr_pooled = pooled_forecasts_lr[col]
         forecast_ffnn_pooled = pooled_forecasts_ffnn[col]
 
-        # rmse_rw = forecast_rmse(mom, forecast_rw)
-        # rmse_auto_arima = forecast_rmse(mom, forecast_auto_arima)
-        # rmse_rf = forecast_rmse(mom, forecast_rf)
-        # rmse_rf_pooled = forecast_rmse(mom, forecast_rf_pooled)
+        rmse_rw = forecast_rmse(mom, forecast_rw)
+        rmse_auto_arima = forecast_rmse(mom, forecast_auto_arima)
+        rmse_rf = forecast_rmse(mom, forecast_rf)
+        rmse_rf_pooled = forecast_rmse(mom, forecast_rf_pooled)
         rmse_lr_pooled = forecast_rmse(mom, forecast_lr_pooled)
         rmse_ffnn_pooled = forecast_rmse(mom, forecast_ffnn_pooled)
 
         results[col] = {
-            # "RW_RMSE": rmse_rw,
-            # "AUTO_ARIMA_RMSE": rmse_auto_arima,
-            # "RF_RMSE": rmse_rf,
-            # "RF_Pooled_RMSE": rmse_rf_pooled,
+            "RW_RMSE": rmse_rw,
+            "AUTO_ARIMA_RMSE": rmse_auto_arima,
+            "RF_RMSE": rmse_rf,
+            "RF_Pooled_RMSE": rmse_rf_pooled,
             "LR_Pooled_RMSE": rmse_lr_pooled,
             "FFNN_Pooled_RMSE": rmse_ffnn_pooled,
         }
-        print(f"RMSEs for {col}: {results[col]}", flush=True)
-
-        # print(pd.DataFrame(results).T, flush=True)
+        print(pd.DataFrame(results).round(4).T, flush=True)
 
     return pd.DataFrame(results)
