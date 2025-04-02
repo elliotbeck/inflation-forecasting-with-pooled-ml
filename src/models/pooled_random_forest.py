@@ -43,7 +43,7 @@ def _forecast_step_multitarget(
     train_window = all_dates[t - rolling_window : t]
 
     train_df = panel_df[panel_df["Date"].isin(train_window)].dropna(
-        subset=feature_cols + ["YoY"]
+        subset=feature_cols + ["Target"]
     )
     test_df = panel_df[panel_df["Date"] == current_date].dropna(subset=feature_cols)
 
@@ -59,7 +59,7 @@ def _forecast_step_multitarget(
         return current_date, {}
 
     X_train = train_df[feature_cols]
-    y_train = train_df["YoY"]
+    y_train = train_df["Target"]
     X_test = test_df[feature_cols]
 
     model = RandomForestRegressor(
@@ -94,7 +94,7 @@ def _forecast_step_multitarget_hrf(
     train_window = all_dates[t - rolling_window : t]
 
     train_df = panel_df[panel_df["Date"].isin(train_window)].dropna(
-        subset=feature_cols + ["YoY"]
+        subset=feature_cols + ["Target"]
     )
     test_df = panel_df[panel_df["Date"] == current_date].dropna(subset=feature_cols)
 
@@ -110,7 +110,7 @@ def _forecast_step_multitarget_hrf(
         return current_date, {}
 
     X_train = train_df[feature_cols]
-    y_train = train_df["YoY"]
+    y_train = train_df["Target"]
     X_test = test_df[feature_cols]
 
     model = RandomForestRegressor(
@@ -167,8 +167,7 @@ def _forecast_step_multitarget_hrf(
 
 
 def rolling_rf_pooled_forecast(
-    yoy_data: pd.DataFrame,
-    lags: int = NUM_LAGS,
+    data: pd.DataFrame,
     min_train_observations: int = MIN_TRAIN_OBSERVATIONS,
     max_features: Optional[int] = None,
     n_jobs: int = 20,
@@ -178,39 +177,27 @@ def rolling_rf_pooled_forecast(
     training a single model at each time step and predicting simultaneously for all eligible countries.
 
     Parameters:
-        yoy_data (pd.DataFrame): Wide-format DataFrame with time as index and columns as countries (YoY inflation).
-        lags (int): Number of lagged features to include for each country.
+        data (pd.DataFrame): Wide-format DataFrame with time as index and columns as countries (inflation).
         min_train_observations (int): Minimum number of training samples required per country to be included in prediction.
         max_features (Optional[int]): Number of features to consider at each split in the RF.
                                       If None, defaults to one-third of the total features.
         n_jobs (int): Number of parallel jobs to run (default: -1 = use all available cores).
 
     Returns:
-        pd.DataFrame: Forecasted values with the same shape and index as input `yoy_data`.
+        pd.DataFrame: Forecasted values with the same shape and index as input `data`.
                       Missing values will remain NaN if the country couldn't be predicted.
     """
-    forecast = pd.DataFrame(index=yoy_data.index, columns=yoy_data.columns, dtype=float)
-
-    # Stack panel
-    panel_df = yoy_data.stack().reset_index()
-    panel_df.columns = ["Date", "Country", "YoY"]
-    panel_df = panel_df.sort_values(["Country", "Date"])
-
-    # Create lags
-    for lag in range(1, lags + 1):
-        panel_df[f"lag_{lag}"] = panel_df.groupby("Country")["YoY"].shift(lag)
+    forecast = pd.DataFrame(index=sorted(data["Date"].unique()), dtype=float)
 
     # One-hot encode countries
-    country_dummies = pd.get_dummies(panel_df["Country"], prefix="country")
-    panel_df = pd.concat([panel_df, country_dummies], axis=1)
+    country_dummies = pd.get_dummies(data["Country"], prefix="country")
+    panel_df = pd.concat([data, country_dummies], axis=1)
+    feature_cols = panel_df.drop(columns=["Date", "Country", "Target"]).columns.tolist()
 
-    feature_cols = [f"lag_{i}" for i in range(1, lags + 1)] + list(
-        country_dummies.columns
-    )
     all_dates = panel_df["Date"].sort_values().unique()
 
     if max_features is None:
-        max_features = int(np.floor(len(feature_cols) / 3))
+        max_features = int(np.floor((len(feature_cols)) / 3))
 
     # Parallel time-step forecasting
     results = Parallel(n_jobs=n_jobs)(
