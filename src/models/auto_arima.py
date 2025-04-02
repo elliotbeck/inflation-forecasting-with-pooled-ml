@@ -109,6 +109,7 @@ def rolling_auto_arima_forecast(
     series: pd.Series,
     num_lags: int = NUM_LAGS,
     min_train_observations: int = MIN_TRAIN_OBSERVATIONS,
+    rolling_window: int = ROLLING_WINDOW_SIZE,
     n_jobs: int = 30,
 ) -> pd.Series:
     """
@@ -118,6 +119,7 @@ def rolling_auto_arima_forecast(
         series: pd.Series of inflation
         num_lags: AR order for ARIMA (AR(num_lags))
         min_train_observations: Minimum required observations to fit model
+        rolling_window: Size of the rolling training window (in time steps)
         n_jobs: Number of parallel workers (-1 = all cores)
 
     Returns:
@@ -134,10 +136,10 @@ def rolling_auto_arima_forecast(
             t,
             series,
             num_lags,
-            ROLLING_WINDOW_SIZE,
+            rolling_window,
             min_train_observations,
         )
-        for t in range(ROLLING_WINDOW_SIZE + num_lags + 1, end_t + 1)
+        for t in range(rolling_window + num_lags + 1, end_t + 1)
     )
 
     for t, pred in results:
