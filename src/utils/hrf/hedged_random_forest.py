@@ -6,7 +6,7 @@ from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn.covariance import ledoit_wolf
 import cvxpy as cp
 
-from src.utils.hrf.quadratic_inverse_shrinkage import QIS
+from utils.hrf.quadratic_inverse_shrinkage import QIS
 
 
 class HedgedRandomForestRegressor(BaseEstimator, RegressorMixin):

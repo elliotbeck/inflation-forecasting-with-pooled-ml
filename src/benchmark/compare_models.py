@@ -8,12 +8,12 @@ month-over-month (MoM) inflation, and evaluates models using RMSE.
 
 import pandas as pd
 
-from src.evaluation.metrics import forecast_rmse
-from src.features.transforms import compute_mom_inflation
-from src.models.auto_arima import rolling_auto_arima_forecast
-from src.models.pooled_random_forest import rolling_rf_pooled_forecast
-from src.models.random_forest import rolling_rf_forecast
-from src.models.random_walk import rolling_rw_forecast
+from evaluation.metrics import forecast_rmse
+from features.transforms import compute_mom_inflation
+from models.auto_arima import rolling_auto_arima_forecast
+from models.pooled_random_forest import rolling_rf_pooled_forecast
+from models.random_forest import rolling_rf_forecast
+from models.random_walk import rolling_rw_forecast
 
 
 def compare_models(data: pd.DataFrame, data_tabular: pd.DataFrame) -> pd.DataFrame:

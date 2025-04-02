@@ -1,10 +1,10 @@
-from src.benchmark.compare_models import compare_models
-from src.data.global_inflation_loader import (
+from benchmark.compare_models import compare_models
+from data.global_inflation_loader import (
     load_global_inflation_data,
     get_lagged_features_and_target,
 )
-from src.features.create_dummies import create_regional_dummies
-from src.config import NUM_LAGS
+from features.create_dummies import create_regional_dummies
+from config import NUM_LAGS
 
 # Load and prepare data
 data = load_global_inflation_data("data/Inflation-data.xlsx")

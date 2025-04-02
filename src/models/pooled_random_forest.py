@@ -6,8 +6,8 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.ensemble import RandomForestRegressor
 
-from src.config import MIN_TRAIN_OBSERVATIONS, ROLLING_WINDOW_SIZE
-from src.utils.hrf.quadratic_inverse_shrinkage import QIS
+from config import MIN_TRAIN_OBSERVATIONS, ROLLING_WINDOW_SIZE
+from utils.hrf.quadratic_inverse_shrinkage import QIS
 
 
 def _forecast_step_multitarget(
@@ -117,6 +117,7 @@ def _forecast_step_multitarget_hrf(
         min_samples_leaf=5,
         random_state=42,
         max_features=max_features,
+        n_jobs=1,
     )
     model.fit(X_train, y_train)
 
@@ -189,11 +190,11 @@ def rolling_rf_pooled_forecast(
     forecast = pd.DataFrame(index=sorted(data["Date"].unique()), dtype=float)
 
     # One-hot encode countries
-    country_dummies = pd.get_dummies(data["Country"], prefix="country")
-    panel_df = pd.concat([data, country_dummies], axis=1)
-    feature_cols = panel_df.drop(columns=["Date", "Country", "Target"]).columns.tolist()
+    # country_dummies = pd.get_dummies(data["Country"], prefix="country")
+    # panel_df = pd.concat([data, country_dummies], axis=1)
+    feature_cols = data.drop(columns=["Date", "Country", "Target"]).columns.tolist()
 
-    all_dates = panel_df["Date"].sort_values().unique()
+    all_dates = data["Date"].sort_values().unique()
 
     if max_features is None:
         max_features = int(np.floor((len(feature_cols)) / 3))
@@ -202,7 +203,7 @@ def rolling_rf_pooled_forecast(
     results = Parallel(n_jobs=n_jobs)(
         delayed(_forecast_step_multitarget)(
             t,
-            panel_df,
+            data,
             all_dates,
             feature_cols,
             ROLLING_WINDOW_SIZE,

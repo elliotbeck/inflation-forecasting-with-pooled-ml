@@ -3,7 +3,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.ensemble import RandomForestRegressor
 
-from src.config import MIN_TRAIN_OBSERVATIONS, ROLLING_WINDOW_SIZE
+from config import MIN_TRAIN_OBSERVATIONS, ROLLING_WINDOW_SIZE
 
 
 def forecast_rf_step(

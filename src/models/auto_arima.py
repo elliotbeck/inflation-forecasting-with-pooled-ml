@@ -6,7 +6,7 @@ from joblib import Parallel, delayed
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
 from statsmodels.tsa.arima.model import ARIMA
 
-from src.config import MIN_TRAIN_OBSERVATIONS, NUM_LAGS, ROLLING_WINDOW_SIZE
+from config import MIN_TRAIN_OBSERVATIONS, NUM_LAGS, ROLLING_WINDOW_SIZE
 from features.create_dummies import create_seasonal_dummies
 
 
@@ -35,21 +35,25 @@ def fit_ar_with_seasonal_dummies(
     best_bic = np.inf
     best_model = None
 
-    for p in range(1, max_p + 1):
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", ConvergenceWarning)
-                model = ARIMA(
-                    train_series, order=(p, 0, 0), exog=seasonal_dummies
-                ).fit()
-            if model.bic < best_bic:
-                best_bic = model.bic
-                best_model = model
-        except Exception:
-            continue
+    # TODO: Uncomment this block to enable model selection
+    # for p in range(1, max_p + 1):
+    #     try:
+    #         with warnings.catch_warnings():
+    #             warnings.simplefilter("ignore", ConvergenceWarning)
+    #             model = ARIMA(
+    #                 train_series, order=(p, 0, 0), exog=seasonal_dummies
+    #             ).fit()
+    #         if model.bic < best_bic:
+    #             best_bic = model.bic
+    #             best_model = model
+    #     except Exception:
+    #         continue
 
-    if best_model is None:
-        return None
+    # if best_model is None:
+    #     return None
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ConvergenceWarning)
+        best_model = ARIMA(train_series, order=(12, 0, 0), exog=seasonal_dummies).fit()
 
     # Create seasonal dummies for the next period (t+1)
     last_date = train_series.index[-1]
