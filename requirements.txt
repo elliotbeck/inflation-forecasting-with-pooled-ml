@@ -5,6 +5,7 @@ pandas==2.2.3      # Data manipulation
 # Machine learning
 scikit-learn==1.6.1  # Core ML models
 statsmodels          # SARIMA time series modeling
+torch>=2.6.0         # PyTorch for deep learning
 cvxpy                # Convex optimization (for rf weights)
 
 # Utilities
