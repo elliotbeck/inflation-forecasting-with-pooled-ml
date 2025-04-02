@@ -14,6 +14,7 @@ from models.auto_arima import rolling_auto_arima_forecast
 from models.pooled_random_forest import rolling_rf_pooled_forecast
 from models.random_forest import rolling_rf_forecast
 from models.random_walk import rolling_rw_forecast
+from features.create_dummies import create_regional_dummies
 
 
 def compare_models(data: pd.DataFrame, data_tabular: pd.DataFrame) -> pd.DataFrame:
@@ -44,7 +45,10 @@ def compare_models(data: pd.DataFrame, data_tabular: pd.DataFrame) -> pd.DataFra
     mom_data = data.apply(compute_mom_inflation)
 
     print("Running pooled RF...", flush=True)
-    pooled_forecasts = rolling_rf_pooled_forecast(data_tabular)
+    data_tabular_pooled = create_regional_dummies(
+        data_tabular, "data/country_continent_map.csv"
+    )
+    pooled_forecasts = rolling_rf_pooled_forecast(data_tabular_pooled)
 
     for col in data.columns:
         mom = mom_data[col]
