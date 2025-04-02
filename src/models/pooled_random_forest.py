@@ -6,8 +6,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.ensemble import RandomForestRegressor
 
-from src.config import MIN_TRAIN_OBSERVATIONS, NUM_LAGS, ROLLING_WINDOW_SIZE
-from src.utils.hrf.ewma_moments import get_ewma_moments
+from src.config import MIN_TRAIN_OBSERVATIONS, ROLLING_WINDOW_SIZE
 from src.utils.hrf.quadratic_inverse_shrinkage import QIS
 
 
