@@ -11,7 +11,7 @@ from features.create_dummies import create_seasonal_dummies
 
 
 def fit_ar_with_seasonal_dummies(
-    train_series: pd.Series, max_p: int = 12
+    train_series: pd.Series, max_p: int = NUM_LAGS
 ) -> float | None:
     """
     Fit AR(p) models with seasonal (monthly) dummies as exogenous regressors,
@@ -53,7 +53,9 @@ def fit_ar_with_seasonal_dummies(
     #     return None
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ConvergenceWarning)
-        best_model = ARIMA(train_series, order=(12, 0, 0), exog=seasonal_dummies).fit()
+        best_model = ARIMA(
+            train_series, order=(max_p, 0, 0), exog=seasonal_dummies
+        ).fit()
 
     # Create seasonal dummies for the next period (t+1)
     last_date = train_series.index[-1]
