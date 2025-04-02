@@ -76,6 +76,7 @@ def get_lagged_features_and_target(df: pd.DataFrame, n_lags: int = 12) -> pd.Dat
     df_continent = df.copy()
     df_continent.columns = [continent_map.get(c) for c in df.columns]
     continent_means = df_continent.T.groupby(level=0).mean().T
+    global_mean = df.mean(axis=1)  # mean across all countries, per date
 
     lagged_data = []
 
@@ -86,10 +87,11 @@ def get_lagged_features_and_target(df: pd.DataFrame, n_lags: int = 12) -> pd.Dat
             lags = country_series.iloc[t - n_lags : t].values[::-1]
             target = country_series.iloc[t]
             date = country_series.index[t]
-            continent = continent_map.get(country)
 
+            continent = continent_map.get(country)
             prev_date = country_series.index[t - 1]
             continent_mean_lag1 = continent_means.at[prev_date, continent]
+            global_mean_lag1 = global_mean.iloc[t - 1]
 
             if not pd.isna(lags).any() and not pd.isna(target):
                 # Get month from date and create dummy columns (1-12 → 2-12 as dummies)
@@ -105,6 +107,7 @@ def get_lagged_features_and_target(df: pd.DataFrame, n_lags: int = 12) -> pd.Dat
                     **{f"Lag_{i + 1}": lags[i] for i in range(n_lags)},
                     **seasonal_dummies,
                     "Regional_Inflation": continent_mean_lag1,
+                    "Global_Inflation": global_mean_lag1,
                 }
                 lagged_data.append(row)
 
