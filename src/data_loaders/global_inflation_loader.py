@@ -75,8 +75,8 @@ def get_lagged_features_and_target(df: pd.DataFrame, n_lags: int = 12) -> pd.Dat
     # Create a new DataFrame where each column is a continent
     df_continent = df.copy()
     df_continent.columns = [continent_map.get(c) for c in df.columns]
-    continent_means = df_continent.T.groupby(level=0).mean().T
-    global_mean = df.mean(axis=1)
+    continent_means = df_continent.T.groupby(level=0).median().T
+    global_mean = df.median(axis=1)
 
     lagged_data = []
 
