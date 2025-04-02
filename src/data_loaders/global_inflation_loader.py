@@ -104,7 +104,7 @@ def get_lagged_features_and_target(df: pd.DataFrame, n_lags: int = 12) -> pd.Dat
                     "Target": target,
                     **{f"Lag_{i + 1}": lags[i] for i in range(n_lags)},
                     **seasonal_dummies,
-                    "Continent": continent_mean_lag1,
+                    "Regional_Inflation": continent_mean_lag1,
                 }
                 lagged_data.append(row)
 
