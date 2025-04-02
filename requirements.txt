@@ -4,10 +4,11 @@ pandas==2.2.3      # Data manipulation
 
 # Machine learning
 scikit-learn==1.6.1  # Core ML models
-pmdarima==2.0.4      # SARIMA time series modeling
+statsmodel           # SARIMA time series modeling
 cvxpy                # Convex optimization (for rf weights)
 
 # Utilities
+openpyxl==3.1.5      # Excel file support
 tqdm==4.67.1         # Progress bars
 pyyaml               # Config file parsing
 python-dotenv==1.1.0 # .env file support
