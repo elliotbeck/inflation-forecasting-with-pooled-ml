@@ -1,8 +1,68 @@
+import warnings
+
+import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from pmdarima import auto_arima
+from statsmodels.tools.sm_exceptions import ConvergenceWarning
+from statsmodels.tsa.arima.model import ARIMA
 
 from src.config import MIN_TRAIN_OBSERVATIONS, NUM_LAGS, ROLLING_WINDOW_SIZE
+from src.features.create_seasonal_dummies import create_seasonal_dummies
+
+
+def fit_ar_with_seasonal_dummies(
+    train_series: pd.Series, max_p: int = 12
+) -> float | None:
+    """
+    Fit AR(p) models with seasonal (monthly) dummies as exogenous regressors,
+    and select the model with the lowest BIC. Forecast one step ahead.
+
+    Parameters:
+        train_series (pd.Series): Time series to fit, must have a DatetimeIndex.
+        max_p (int): Maximum AR order to try (p from 1 to max_p).
+
+    Returns:
+        float or None: One-step-ahead forecast, or None if fitting fails.
+    """
+    if not isinstance(train_series.index, pd.DatetimeIndex):
+        raise ValueError(
+            "train_series must have a DatetimeIndex for seasonal dummies to work"
+        )
+
+    train_series = train_series.asfreq("MS")
+    seasonal_dummies = create_seasonal_dummies(train_series.index)
+    seasonal_dummies.index = train_series.index
+    best_bic = np.inf
+    best_model = None
+
+    for p in range(1, max_p + 1):
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", ConvergenceWarning)
+                model = ARIMA(
+                    train_series, order=(p, 0, 0), exog=seasonal_dummies
+                ).fit()
+            if model.bic < best_bic:
+                best_bic = model.bic
+                best_model = model
+        except Exception:
+            continue
+
+    if best_model is None:
+        return None
+
+    # Create seasonal dummies for the next period (t+1)
+    last_date = train_series.index[-1]
+    next_month = last_date + pd.DateOffset(months=1)
+    next_month_dummies = create_seasonal_dummies(pd.DatetimeIndex([next_month]))
+
+    # Align dummy columns to training set (to avoid missing ones)
+    next_exog = next_month_dummies.reindex(
+        columns=seasonal_dummies.columns, fill_value=0
+    )
+
+    # Forecast next value
+    return best_model.forecast(steps=1, exog=next_exog).iloc[0]
 
 
 def forecast_arima_step(
@@ -12,34 +72,41 @@ def forecast_arima_step(
     rolling_window: int,
     min_train_observations: int,
 ) -> tuple[int, float | None]:
+    """
+    Perform a one-step-ahead AR(p) forecast with seasonal dummies for a given time point t.
+
+    This function:
+    - Extracts a rolling window ending at time t from the input series
+    - Ensures the window has sufficient non-missing data
+    - Fits AR(p) models (for p in 1 to `num_lags`) with 12 seasonal dummies as exogenous regressors
+    - Selects the model with the lowest BIC
+    - Returns the one-step-ahead forecast
+
+    Parameters:
+        t (int): Time index (used for windowing, not datetime).
+        series (pd.Series): The time series data with a DatetimeIndex.
+        num_lags (int): Maximum AR order (p) to consider for model selection.
+        rolling_window (int): Size of the rolling training window (in time steps).
+        min_train_observations (int): Minimum required non-missing observations to attempt model fitting.
+
+    Returns:
+        tuple[int, float | None]: The time index `t`, and the forecast value.
+                                  If not enough data is available or fitting fails, returns `None` for the prediction.
+    """
     train_series = series.iloc[t - rolling_window : t].dropna()
 
     if train_series.shape[0] < (min_train_observations + num_lags):
         return t, None
 
     try:
-        model = auto_arima(
-            train_series,
-            start_p=num_lags,
-            max_p=num_lags,
-            d=0,
-            start_q=0,
-            max_q=0,
-            seasonal=False,
-            stepwise=True,
-            suppress_warnings=True,
-            error_action="ignore",
-            max_order=1,
-            n_jobs=1,
-        )
-        pred = model.predict(n_periods=1).iloc[0]
+        pred = fit_ar_with_seasonal_dummies(train_series, max_p=num_lags)
         return t, pred
     except Exception:
         return t, None
 
 
 def rolling_auto_arima_forecast(
-    yoy_series: pd.Series,
+    series: pd.Series,
     num_lags: int = NUM_LAGS,
     min_train_observations: int = MIN_TRAIN_OBSERVATIONS,
     n_jobs: int = 30,
@@ -48,7 +115,7 @@ def rolling_auto_arima_forecast(
     Parallel rolling one-step-ahead ARIMA forecast using auto_arima.
 
     Parameters:
-        yoy_series: pd.Series of YoY inflation
+        series: pd.Series of inflation
         num_lags: AR order for ARIMA (AR(num_lags))
         min_train_observations: Minimum required observations to fit model
         n_jobs: Number of parallel workers (-1 = all cores)
@@ -56,21 +123,25 @@ def rolling_auto_arima_forecast(
     Returns:
         forecast: pd.Series with predictions aligned to input index
     """
-    forecast = pd.Series(index=yoy_series.index, dtype=float)
+    forecast = pd.Series(index=series.index, dtype=float)
+
+    # Only forecast up to the last valid observation in the series
+    last_valid_index = series.last_valid_index()
+    end_t = series.index.get_loc(last_valid_index)
 
     results = Parallel(n_jobs=n_jobs)(
         delayed(forecast_arima_step)(
             t,
-            yoy_series,
+            series,
             num_lags,
             ROLLING_WINDOW_SIZE,
             min_train_observations,
         )
-        for t in range(ROLLING_WINDOW_SIZE, len(yoy_series))
+        for t in range(ROLLING_WINDOW_SIZE + num_lags + 1, end_t + 1)
     )
 
     for t, pred in results:
         if pred is not None:
-            forecast.iloc[t] = pred
+            forecast.at[series.index[t]] = pred
 
     return forecast
