@@ -4,7 +4,7 @@ pandas==2.2.3      # Data manipulation
 
 # Machine learning
 scikit-learn==1.6.1  # Core ML models
-statsmodel           # SARIMA time series modeling
+statsmodels          # SARIMA time series modeling
 cvxpy                # Convex optimization (for rf weights)
 
 # Utilities
@@ -12,6 +12,7 @@ openpyxl==3.1.5      # Excel file support
 tqdm==4.67.1         # Progress bars
 pyyaml               # Config file parsing
 python-dotenv==1.1.0 # .env file support
+matplotlib>=3.10.1    # Plotting
 
 # External data
 fredapi==0.5.2       # FRED economic data API
