@@ -65,7 +65,7 @@ def _forecast_step_multitarget(
         n_estimators=500,
         min_samples_leaf=5,
         random_state=42,
-        n_jobs=-1,
+        n_jobs=1,
         max_features=max_features,
     )
     model.fit(X_train, y_train)
@@ -170,7 +170,7 @@ def rolling_rf_pooled_forecast(
     data: pd.DataFrame,
     min_train_observations: int = MIN_TRAIN_OBSERVATIONS,
     max_features: Optional[int] = None,
-    n_jobs: int = 20,
+    n_jobs: int = 30,
 ) -> pd.DataFrame:
     """
     Forecasts one-step-ahead YoY inflation for all countries using a pooled Random Forest,
