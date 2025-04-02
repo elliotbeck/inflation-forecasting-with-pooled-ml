@@ -7,7 +7,7 @@ from statsmodels.tools.sm_exceptions import ConvergenceWarning
 from statsmodels.tsa.arima.model import ARIMA
 
 from src.config import MIN_TRAIN_OBSERVATIONS, NUM_LAGS, ROLLING_WINDOW_SIZE
-from src.features.create_seasonal_dummies import create_seasonal_dummies
+from features.create_dummies import create_seasonal_dummies
 
 
 def fit_ar_with_seasonal_dummies(
