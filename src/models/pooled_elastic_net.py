@@ -95,12 +95,7 @@ def rolling_elastic_net_pooled_forecast(
                       Missing values will remain NaN if the country couldn't be predicted.
     """
     forecast = pd.DataFrame(index=sorted(data["Date"].unique()), dtype=float)
-
-    # One-hot encode countries
-    # country_dummies = pd.get_dummies(data["Country"], prefix="country")
-    # panel_df = pd.concat([data, country_dummies], axis=1)
     feature_cols = data.drop(columns=["Date", "Country", "Target"]).columns.tolist()
-
     all_dates = data["Date"].sort_values().unique()
 
     if max_features is None:

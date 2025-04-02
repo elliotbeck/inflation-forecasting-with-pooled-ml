@@ -74,6 +74,56 @@ def _forecast_step_multitarget(
     return current_date, dict(zip(test_df["Country"], y_pred))
 
 
+def rolling_rf_pooled_forecast(
+    data: pd.DataFrame,
+    min_train_observations: int = MIN_TRAIN_OBSERVATIONS,
+    max_features: Optional[int] = None,
+    n_jobs: int = 30,
+) -> pd.DataFrame:
+    """
+    Forecasts one-step-ahead YoY inflation for all countries using a pooled Random Forest,
+    training a single model at each time step and predicting simultaneously for all eligible countries.
+
+    Parameters:
+        data (pd.DataFrame): Wide-format DataFrame with time as index and columns as countries (inflation).
+        min_train_observations (int): Minimum number of training samples required per country to be included in prediction.
+        max_features (Optional[int]): Number of features to consider at each split in the RF.
+                                      If None, defaults to one-third of the total features.
+        n_jobs (int): Number of parallel jobs to run (default: -1 = use all available cores).
+
+    Returns:
+        pd.DataFrame: Forecasted values with the same shape and index as input `data`.
+                      Missing values will remain NaN if the country couldn't be predicted.
+    """
+    forecast = pd.DataFrame(index=sorted(data["Date"].unique()), dtype=float)
+    feature_cols = data.drop(columns=["Date", "Country", "Target"]).columns.tolist()
+    all_dates = data["Date"].sort_values().unique()
+
+    if max_features is None:
+        max_features = int(np.floor((len(feature_cols)) / 3))
+
+    # Parallel time-step forecasting
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_forecast_step_multitarget)(
+            t,
+            data,
+            all_dates,
+            feature_cols,
+            ROLLING_WINDOW_SIZE,
+            min_train_observations,
+            max_features,
+        )
+        for t in range(ROLLING_WINDOW_SIZE, len(all_dates))
+    )
+
+    # Fill in forecast matrix
+    for date, preds in results:
+        for country, value in preds.items():
+            forecast.loc[date, country] = value
+
+    return forecast
+
+
 def _forecast_step_multitarget_hrf(
     t: int,
     panel_df: pd.DataFrame,
@@ -164,58 +214,3 @@ def _forecast_step_multitarget_hrf(
         predictions[country] = (test_preds @ w.value).item()
 
     return current_date, predictions
-
-
-def rolling_rf_pooled_forecast(
-    data: pd.DataFrame,
-    min_train_observations: int = MIN_TRAIN_OBSERVATIONS,
-    max_features: Optional[int] = None,
-    n_jobs: int = 30,
-) -> pd.DataFrame:
-    """
-    Forecasts one-step-ahead YoY inflation for all countries using a pooled Random Forest,
-    training a single model at each time step and predicting simultaneously for all eligible countries.
-
-    Parameters:
-        data (pd.DataFrame): Wide-format DataFrame with time as index and columns as countries (inflation).
-        min_train_observations (int): Minimum number of training samples required per country to be included in prediction.
-        max_features (Optional[int]): Number of features to consider at each split in the RF.
-                                      If None, defaults to one-third of the total features.
-        n_jobs (int): Number of parallel jobs to run (default: -1 = use all available cores).
-
-    Returns:
-        pd.DataFrame: Forecasted values with the same shape and index as input `data`.
-                      Missing values will remain NaN if the country couldn't be predicted.
-    """
-    forecast = pd.DataFrame(index=sorted(data["Date"].unique()), dtype=float)
-
-    # One-hot encode countries
-    # country_dummies = pd.get_dummies(data["Country"], prefix="country")
-    # panel_df = pd.concat([data, country_dummies], axis=1)
-    feature_cols = data.drop(columns=["Date", "Country", "Target"]).columns.tolist()
-
-    all_dates = data["Date"].sort_values().unique()
-
-    if max_features is None:
-        max_features = int(np.floor((len(feature_cols)) / 3))
-
-    # Parallel time-step forecasting
-    results = Parallel(n_jobs=n_jobs)(
-        delayed(_forecast_step_multitarget)(
-            t,
-            data,
-            all_dates,
-            feature_cols,
-            ROLLING_WINDOW_SIZE,
-            min_train_observations,
-            max_features,
-        )
-        for t in range(ROLLING_WINDOW_SIZE, len(all_dates))
-    )
-
-    # Fill in forecast matrix
-    for date, preds in results:
-        for country, value in preds.items():
-            forecast.loc[date, country] = value
-
-    return forecast
