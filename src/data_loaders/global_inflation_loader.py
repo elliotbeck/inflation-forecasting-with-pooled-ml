@@ -67,7 +67,7 @@ def get_lagged_features_and_target(df: pd.DataFrame, n_lags: int = 12) -> pd.Dat
 
     # Map countries to continents
     continent_map = (
-        pd.read_csv("data/country_continent_map.csv")
+        pd.read_csv("data/country_continent_map.csv", sep=";", header=0)
         .set_index("Country")["Continent"]
         .to_dict()
     )
