@@ -9,7 +9,6 @@ month-over-month (MoM) inflation, and evaluates models using RMSE.
 import pandas as pd
 
 from evaluation.metrics import forecast_rmse
-from features.create_dummies import create_regional_dummies
 from features.transforms import compute_mom_inflation
 from models.auto_arima import rolling_auto_arima_forecast
 from models.pooled_elastic_net import rolling_elastic_net_pooled_forecast
@@ -45,12 +44,7 @@ def compare_models(data: pd.DataFrame, data_tabular: pd.DataFrame) -> pd.DataFra
     """
     results = {}
     mom_data = data.apply(compute_mom_inflation)
-    data_tabular_pooled = create_regional_dummies(
-        data_tabular, "data/country_continent_map.csv"
-    )
-    # One-hot encode countries
-    country_dummies = pd.get_dummies(data_tabular_pooled["Country"], prefix="country")
-    data_tabular_pooled = pd.concat([data_tabular_pooled, country_dummies], axis=1)
+    data_tabular_pooled = data_tabular.copy()
 
     print("Running pooled LR...", flush=True)
     pooled_forecasts_lr = rolling_elastic_net_pooled_forecast(data_tabular_pooled)
@@ -87,6 +81,22 @@ def compare_models(data: pd.DataFrame, data_tabular: pd.DataFrame) -> pd.DataFra
             "LR_Pooled_RMSE": rmse_lr_pooled,
             "FFNN_Pooled_RMSE": rmse_ffnn_pooled,
         }
-        print(pd.DataFrame(results).round(4).T, flush=True)
+
+        # Save forecasts df to CSV per country
+        forecast_df = pd.DataFrame(
+            {
+                "Country": col,
+                "Date": mom.index,
+                "Actual": mom.values,
+                "RW_Forecast": forecast_rw,
+                "ARIMA_Forecast": forecast_auto_arima,
+                "RF_Forecast": forecast_rf,
+                "RF_Pooled_Forecast": forecast_rf_pooled,
+                "LR_Pooled_Forecast": forecast_lr_pooled,
+                "FFNN_Pooled_Forecast": forecast_ffnn_pooled,
+            }
+        )
+        forecast_df.to_csv(f"results/forecasts_{col}.csv", index=False)
+        print(f"Forecasts for {col} saved to CSV.", flush=True)
 
     return pd.DataFrame(results)
